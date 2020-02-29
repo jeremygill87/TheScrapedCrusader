@@ -27,28 +27,53 @@ mongoose.connect("mongodb://localhost/articlePopulate", { useNewUrlParser: true 
 
 // Routes
 
-// A GET route for scraping the NYTimes website
+// A GET route for scraping the Vice Election 2020 website
 app.get("/scrape", function(req, res) {
     // Grab the body of the html with axios
-    axios.get("http://www.nytimes.com/").then(function(response) {
+    axios.get("https://www.vice.com/en_us/topic/2020").then(function(response) {
         // Load into cheerio and save it to $
         var $ = cheerio.load(response.data);
-
-        // Empty array
+        console.log($);
         var results = [];
+            $(".topics-card__heading-link").each(function(i, element) {
+                var title = $(element).text();
+                var link = $(element).attr("href");
+            
 
-        $("article").each(function(i, element) {
-
-            var title = $(element).children().text();
-            var link = $(element).find("a").attr("href");
-
-            // Save results in an object that will be pushed into the results array defined earlier
             results.push({
                 title: title,
-                link: link
+                link: link,
             });
-        });
-
+            });
+        
+        res.send("Scrape Complete");
         console.log(results);        
     });
+});
+
+app.get("/articles", function(req, res) {
+    db.Article.find({})
+        .then(function(dbArticle) {
+            res.json(dbArticle);
+        })
+        .catch(function(err) {
+            res.json(err);
+        });
+});
+
+app.get("/articles/:id", function(req, res) {
+
+    db.Article.findOne({_id: req.params.id })
+    .populate("note")
+    .then(function(dbArticle) {
+        res.json(dbArticle);
+    })
+    .catch(function(err) {
+        res.json(err);
+    });
+});
+
+// Start server
+app.listen(PORT, function() {
+    console.log("App running on port " + PORT + "!");
 });
